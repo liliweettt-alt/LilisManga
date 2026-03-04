@@ -75,7 +75,7 @@
                     </select>
                     <select id="filterTags" onchange="renderLibrary()" class="bg-[#1a1a1a] text-[11px] font-bold p-2.5 rounded-lg border border-[#333] text-gray-300 min-w-max outline-none focus:border-orange-500">
                         <option value="all">Tag: All</option>
-                        </select>
+                    </select>
                     <select id="sortOption" onchange="renderLibrary()" class="bg-[#1a1a1a] text-[11px] font-bold p-2.5 rounded-lg border border-[#333] text-gray-300 min-w-max outline-none focus:border-orange-500">
                         <option value="newest">Sort: Newest</option>
                         <option value="az">Sort: A-Z</option>
@@ -146,7 +146,7 @@
         <div class="bg-[#1a1a1a] w-full max-w-lg rounded-t-[2.5rem] p-8 h-[85vh] overflow-y-auto border-t border-white/10">
             <div class="flex justify-between items-center mb-8">
                 <h2 id="modalTitle" class="text-2xl font-black">Entry</h2>
-                <button onclick="closeModal()" class="text-gray-500 p-2"><i class="fa-solid fa-chevron-down text-xl"></i></button>
+                <button type="button" onclick="closeModal()" class="text-gray-500 p-2"><i class="fa-solid fa-chevron-down text-xl"></i></button>
             </div>
             <form id="mangaForm" class="space-y-5 pb-20">
                 <input type="hidden" id="editId">
@@ -222,11 +222,35 @@
         let chartInstance = null;
         let readingGoal = localStorage.getItem('mangaGoal') || 20;
 
+        // SAFE ID GENERATOR (Works correctly on local file:// files)
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2);
+        }
+
+        // BACKGROUND CLEANER: Ensures all data has a safe ID
+        function ensureDataIntegrity() {
+            let changed = false;
+            manga.forEach(m => {
+                if (!m.id) {
+                    m.id = generateId();
+                    changed = true;
+                }
+            });
+            if (changed) {
+                localStorage.setItem('mangaLibData_Orange', JSON.stringify(manga));
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const stored = localStorage.getItem('mangaLibData_Orange');
-            if (stored) { manga = JSON.parse(stored); renderLibrary(); }
+            if (stored) { 
+                manga = JSON.parse(stored); 
+                ensureDataIntegrity(); // Run the cleaner
+                renderLibrary(); 
+            }
             document.getElementById('fileInput').addEventListener('change', handleFileUpload);
             document.getElementById('currentYear').innerText = new Date().getFullYear();
+            document.getElementById('mangaForm').addEventListener('submit', handleFormSubmit);
         });
 
         function switchTab(tab) {
@@ -262,20 +286,17 @@
             `).join('');
         }
 
-        // --- TAG HELPER & DROPDOWNS ---
         function populateFilterDropdowns() {
             const tagSet = new Set();
             manga.forEach(m => { (m.tags || []).forEach(t => tagSet.add(t.trim())); });
             const tags = Array.from(tagSet).sort((a,b) => a.localeCompare(b));
 
-            // Library Filter
             const filterSelect = document.getElementById('filterTags');
             const currentFilter = filterSelect.value;
             filterSelect.innerHTML = `<option value="all">Tag: All</option>`;
             tags.forEach(t => { if(t) filterSelect.innerHTML += `<option value="${t}">${t}</option>`; });
             if(tags.includes(currentFilter)) filterSelect.value = currentFilter;
 
-            // Modal Helper
             const helperSelect = document.getElementById('selTagsHelper');
             helperSelect.innerHTML = `<option value="">Select used...</option>`;
             tags.forEach(t => { if(t) helperSelect.innerHTML += `<option value="${t}">${t}</option>`; });
@@ -292,12 +313,11 @@
                 current.push(val);
                 input.value = current.join(', ');
             }
-            select.value = ''; // Reset helper dropdown
+            select.value = ''; 
         }
 
-        // --- RENDER LIBRARY ---
         function renderLibrary() {
-            populateFilterDropdowns(); // Re-populate tags whenever library renders
+            populateFilterDropdowns(); 
 
             const list = document.getElementById('mangaList');
             const search = document.getElementById('searchInput').value.toLowerCase();
@@ -305,7 +325,6 @@
             const tagF = document.getElementById('filterTags').value;
             const sortOpt = document.getElementById('sortOption').value;
 
-            // Filter
             let filtered = manga.filter(m => {
                 const matchesSearch = m.name.toLowerCase().includes(search) || (m.tags || []).join(' ').toLowerCase().includes(search) || (m.summary || '').toLowerCase().includes(search);
                 const matchesProg = progF === 'all' || m.progress === progF;
@@ -313,11 +332,10 @@
                 return matchesSearch && matchesProg && matchesTag;
             });
 
-            // Sort
             filtered.sort((a, b) => {
                 if (sortOpt === 'az') return a.name.localeCompare(b.name);
-                if (sortOpt === 'chapters') return (b.chapters || 0) - (a.chapters || 0); // Longest first
-                return 0; // 'newest' uses default array order
+                if (sortOpt === 'chapters') return (b.chapters || 0) - (a.chapters || 0); 
+                return 0; 
             });
 
             list.innerHTML = '';
@@ -329,8 +347,11 @@
                 const tagsHtml = (m.tags && m.tags.length > 0) ? `<div class="mt-3 flex flex-wrap gap-1">${m.tags.slice(0, 4).map(t => `<span class="tag-chip">${t}</span>`).join('')}</div>` : '';
                 const summaryHtml = m.summary ? `<p class="text-[11px] text-gray-400 italic mt-2 line-clamp-2 leading-relaxed">${m.summary}</p>` : '';
                 
+                // Safe escaping for onclick 
+                const safeId = m.id.replace(/'/g, "\\'");
+
                 card.innerHTML = `
-                    <div class="flex justify-between items-start cursor-pointer" onclick="openEditModal('${m.id}')">
+                    <div class="flex justify-between items-start cursor-pointer" onclick="openEditModal('${safeId}')">
                         <div class="flex-1 pr-4">
                             <h3 class="font-extrabold text-xl text-white leading-tight mb-2">${m.name}</h3>
                             <div class="flex flex-wrap gap-1.5 mb-1">
@@ -343,7 +364,7 @@
                             <span class="text-xl font-black text-white">${m.chapters || 0}<small class="text-[10px] text-gray-500 ml-1">CH</small></span>
                         </div>
                     </div>
-                    <div onclick="openEditModal('${m.id}')" class="cursor-pointer">
+                    <div onclick="openEditModal('${safeId}')" class="cursor-pointer">
                         ${tagsHtml}
                         ${summaryHtml}
                     </div>
@@ -369,7 +390,6 @@
             document.getElementById('stat-reading').innerText = reading;
             document.getElementById('stat-finished').innerText = finished;
 
-            // Goal Logic
             const currentYear = new Date().getFullYear();
             const finishedThisYear = manga.filter(m => 
                 m.finishedDates && m.finishedDates.some(d => new Date(d).getFullYear() === currentYear)
@@ -380,7 +400,6 @@
             const percent = Math.min((finishedThisYear / readingGoal) * 100, 100);
             document.getElementById('goalBar').style.width = percent + '%';
 
-            // Chart
             const counts = { 'READ': 0, 'READING': 0, 'TBR': 0 };
             manga.forEach(m => {
                 if(counts[m.progress] !== undefined) counts[m.progress]++;
@@ -418,8 +437,9 @@
         }
 
         function openEditModal(id) {
-            const m = manga.find(x => x.id === id);
+            const m = manga.find(x => x.id === id || String(x.id) === String(id));
             if(!m) return;
+            
             document.getElementById('editId').value = m.id;
             document.getElementById('inpName').value = m.name;
             document.getElementById('inpLink').value = m.link || '';
@@ -429,7 +449,10 @@
             document.getElementById('inpSummary').value = m.summary || '';
             document.getElementById('inpTags').value = (m.tags || []).join(', ');
             tempDates = m.finishedDates ? [...m.finishedDates] : [];
-            renderDateList(); toggleDateUI();
+            
+            renderDateList(); 
+            toggleDateUI();
+            
             document.getElementById('btnDelete').classList.remove('hidden');
             document.getElementById('mangaModal').classList.remove('hidden');
         }
@@ -437,18 +460,25 @@
         function openAddModal() {
             document.getElementById('mangaForm').reset();
             document.getElementById('editId').value = '';
-            tempDates = []; renderDateList(); toggleDateUI();
+            tempDates = []; 
+            
+            renderDateList(); 
+            toggleDateUI();
+            
             document.getElementById('btnDelete').classList.add('hidden');
             document.getElementById('mangaModal').classList.remove('hidden');
         }
 
-        function closeModal() { document.getElementById('mangaModal').classList.add('hidden'); }
+        function closeModal() { 
+            document.getElementById('mangaModal').classList.add('hidden'); 
+        }
 
         function handleFormSubmit(e) {
             e.preventDefault();
             const id = document.getElementById('editId').value;
+            
             const obj = {
-                id: id || crypto.randomUUID(),
+                id: id || generateId(),
                 name: document.getElementById('inpName').value,
                 link: document.getElementById('inpLink').value,
                 progress: document.getElementById('inpProgress').value,
@@ -458,12 +488,31 @@
                 tags: document.getElementById('inpTags').value.split(',').map(t => t.trim()).filter(t => t),
                 finishedDates: [...tempDates]
             };
+
             if(id) {
-                const idx = manga.findIndex(x => x.id === id);
-                manga[idx] = obj;
-            } else { manga.unshift(obj); }
+                const idx = manga.findIndex(x => x.id === id || String(x.id) === String(id));
+                if (idx !== -1) {
+                    manga[idx] = obj;
+                } else {
+                    manga.unshift(obj);
+                }
+            } else { 
+                manga.unshift(obj); 
+            }
+
             localStorage.setItem('mangaLibData_Orange', JSON.stringify(manga));
-            renderLibrary(); closeModal();
+            renderLibrary(); 
+            closeModal();
+        }
+
+        function deleteManga() {
+            if(confirm("Delete this entry?")) {
+                const id = document.getElementById('editId').value;
+                manga = manga.filter(x => x.id !== id && String(x.id) !== String(id));
+                localStorage.setItem('mangaLibData_Orange', JSON.stringify(manga));
+                renderLibrary(); 
+                closeModal();
+            }
         }
 
         function updateReport() {
@@ -505,7 +554,7 @@
                     const data = JSON.parse(ev.target.result);
                     let importedManga = Array.isArray(data) ? data : (data.manga || []);
                     
-                    importedManga = importedManga.map(m => ({...m, id: m.id || crypto.randomUUID()}));
+                    importedManga = importedManga.map(m => ({...m, id: m.id || generateId()}));
                     manga = importedManga; 
                     
                     localStorage.setItem('mangaLibData_Orange', JSON.stringify(manga));
@@ -518,7 +567,6 @@
                     
                 } catch(err) { 
                     alert("Error parsing JSON. Please make sure the file format is correct."); 
-                    console.error(err);
                 }
             };
             reader.readAsText(file);
