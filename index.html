@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MangaTrack v1</title>
+    <title>MangaLib Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -16,51 +16,56 @@
         .glass-nav { background-color: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-top: 1px solid rgba(255,255,255,0.05); }
         .nav-btn.active { color: #818cf8; }
         .nav-btn { color: #64748b; }
-        .manga-card { background-color: var(--bg-card); border: 1px solid rgba(255,255,255,0.05); transition: transform 0.1s; }
-        .manga-card:active { transform: scale(0.98); }
+        .manga-card { background-color: var(--bg-card); border: 1px solid rgba(255,255,255,0.05); }
         .input-field { width: 100%; background-color: var(--bg-input); padding: 0.8rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.1); color: white; font-size: 0.9rem; }
         .badge { padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }
+        .tag-chip { font-size: 0.7rem; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 4px; color: #94a3b8; }
         .animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="antialiased">
 
     <nav class="fixed bottom-0 w-full glass-nav flex justify-around px-6 py-3 z-50 pb-6 shadow-lg">
-        <button onclick="switchTab('library')" class="nav-btn active" id="btn-library">
-            <i class="fa-solid fa-book-open text-xl mb-1"></i>
-            <span class="block text-[10px] font-bold">Library</span>
+        <button onclick="switchTab('library')" class="nav-btn active text-center" id="btn-library">
+            <i class="fa-solid fa-book-open text-xl"></i>
+            <span class="block text-[9px] font-bold">Library</span>
         </button>
-        <button onclick="switchTab('dashboard')" class="nav-btn" id="btn-dashboard">
-            <i class="fa-solid fa-chart-simple text-xl mb-1"></i>
-            <span class="block text-[10px] font-bold">Stats</span>
+        <button onclick="switchTab('dashboard')" class="nav-btn text-center" id="btn-dashboard">
+            <i class="fa-solid fa-chart-pie text-xl"></i>
+            <span class="block text-[9px] font-bold">Stats</span>
         </button>
-        <button onclick="switchTab('settings')" class="nav-btn" id="btn-settings">
-            <i class="fa-solid fa-gear text-xl mb-1"></i>
-            <span class="block text-[10px] font-bold">Data</span>
+        <button onclick="switchTab('report')" class="nav-btn text-center" id="btn-report">
+            <i class="fa-solid fa-calendar-check text-xl"></i>
+            <span class="block text-[9px] font-bold">History</span>
+        </button>
+        <button onclick="switchTab('settings')" class="nav-btn text-center" id="btn-settings">
+            <i class="fa-solid fa-sliders text-xl"></i>
+            <span class="block text-[9px] font-bold">Data</span>
         </button>
     </nav>
 
     <main class="pb-32 pt-8 px-5 max-w-md mx-auto min-h-screen">
         <div id="tab-library" class="tab-content">
             <div class="flex justify-between items-center mb-6">
-                <div><h1 class="text-3xl font-bold text-indigo-400">MangaTrack</h1><p class="text-slate-400 text-xs mt-1">Reading Progress</p></div>
+                <div><h1 class="text-3xl font-bold text-indigo-400">MangaLib</h1><p class="text-slate-400 text-xs mt-1">Reading Tracker</p></div>
                 <button onclick="openAddModal()" class="bg-indigo-600 text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg"><i class="fa-solid fa-plus"></i></button>
             </div>
             
             <div class="space-y-3 mb-6">
-                <input type="text" id="searchInput" placeholder="Search title or source..." class="input-field" onkeyup="renderLibrary()">
+                <input type="text" id="searchInput" placeholder="Search name, tags, source..." class="input-field" onkeyup="renderLibrary()">
                 <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-                    <select id="filterProgress" onchange="renderLibrary()" class="bg-slate-800 text-xs p-2 rounded-lg border border-slate-700">
-                        <option value="all">All Progress</option>
+                    <select id="filterProgress" onchange="renderLibrary()" class="bg-slate-800 text-xs p-2 rounded-lg border border-slate-700 text-white">
+                        <option value="all">Progress: All</option>
                         <option value="READING">Reading</option>
-                        <option value="TBR">To Be Read</option>
-                        <option value="READ">Completed</option>
+                        <option value="TBR">TBR</option>
+                        <option value="READ">Read</option>
                     </select>
-                    <select id="filterStatus" onchange="renderLibrary()" class="bg-slate-800 text-xs p-2 rounded-lg border border-slate-700">
-                        <option value="all">All Status</option>
+                    <select id="filterStatus" onchange="renderLibrary()" class="bg-slate-800 text-xs p-2 rounded-lg border border-slate-700 text-white">
+                        <option value="all">Status: All</option>
                         <option value="WIP">WIP</option>
-                        <option value="COMPLETE">Finished</option>
+                        <option value="COMPLETE">Complete</option>
                     </select>
                 </div>
             </div>
@@ -68,80 +73,87 @@
         </div>
 
         <div id="tab-dashboard" class="tab-content hidden animate-fade-in">
-            <h1 class="text-2xl font-bold mb-6">Statistics</h1>
+            <h1 class="text-2xl font-bold mb-6">Stats</h1>
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                    <p class="text-[10px] text-slate-500 uppercase font-bold">Total Titles</p>
-                    <p class="text-2xl font-bold text-white" id="stat-total">0</p>
+                    <p class="text-[10px] text-slate-500 uppercase font-bold">Titles Read</p>
+                    <p class="text-2xl font-bold text-white" id="stat-total-read">0</p>
                 </div>
                 <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
                     <p class="text-[10px] text-slate-500 uppercase font-bold">Total Chapters</p>
                     <p class="text-2xl font-bold text-indigo-400" id="stat-chapters">0</p>
                 </div>
             </div>
-            
-            <div class="space-y-6">
-                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
-                    <h3 class="text-sm font-bold text-slate-300 mb-4 uppercase text-center">Reading Progress</h3>
-                    <div class="h-48"><canvas id="chartProgress"></canvas></div>
-                </div>
-                <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
-                    <h3 class="text-sm font-bold text-slate-300 mb-4 uppercase text-center">Publication Status</h3>
-                    <div class="h-48"><canvas id="chartStatus"></canvas></div>
-                </div>
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 mb-6">
+                <h3 class="text-sm font-bold text-slate-300 mb-4 uppercase text-center">Library Breakdown</h3>
+                <div class="h-48"><canvas id="chartProgress"></canvas></div>
             </div>
         </div>
 
+        <div id="tab-report" class="tab-content hidden animate-fade-in">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold">History</h1>
+                <select id="historyYearPicker" class="bg-slate-800 text-xs p-2 rounded-lg border border-slate-700 text-white" onchange="updateReport()"></select>
+            </div>
+            <div id="reportContent" class="space-y-6"></div>
+        </div>
+
         <div id="tab-settings" class="tab-content hidden animate-fade-in">
-            <h1 class="text-2xl font-bold mb-6">Data Management</h1>
+            <h1 class="text-2xl font-bold mb-6">Settings</h1>
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-6">
                 <div>
-                    <h3 class="font-bold mb-3 text-sm text-indigo-300">Import Manga List</h3>
-                    <input type="file" id="fileInput" accept=".json" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:bg-indigo-600 file:text-white"/>
+                    <h3 class="font-bold mb-3 text-sm text-indigo-300">Import/Export</h3>
+                    <input type="file" id="fileInput" accept=".json" class="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:bg-indigo-600 file:text-white mb-4"/>
+                    <button onclick="exportData()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm mb-2">Download Backup</button>
                 </div>
-                <button onclick="exportData()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl text-sm">Download Backup</button>
-                <button onclick="clearData()" class="w-full text-red-400 text-sm font-semibold pt-4">Delete All Data</button>
+                <button onclick="clearData()" class="w-full text-red-400 text-xs font-semibold pt-4">Clear All Local Data</button>
             </div>
         </div>
     </main>
 
-    <div id="mangaModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-slate-800 w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl p-6 h-[80vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h2 id="modalTitle" class="text-xl font-bold">Add Manga</h2>
+    <div id="mangaModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-[100] flex items-end sm:items-center justify-center">
+        <div class="bg-slate-800 w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl p-6 h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6 sticky top-0 bg-slate-800 z-10 pb-2">
+                <h2 id="modalTitle" class="text-xl font-bold">Manga Details</h2>
                 <button onclick="closeModal()" class="text-slate-400"><i class="fa-solid fa-xmark text-xl"></i></button>
             </div>
-            <form id="mangaForm" class="space-y-4">
+            <form id="mangaForm" class="space-y-4 pb-10">
                 <input type="hidden" id="editId">
-                <input type="text" id="inpName" placeholder="Manga Title" class="input-field" required>
-                <input type="text" id="inpLink" placeholder="Source / Link (e.g. Solo Leveling - HARIMANGA)" class="input-field">
+                <input type="text" id="inpName" placeholder="Name" class="input-field" required>
+                <input type="text" id="inpLink" placeholder="Link or Source" class="input-field">
                 
                 <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="text-xs text-slate-400 mb-1 block">Reading Progress</label>
-                        <select id="inpProgress" class="input-field">
-                            <option value="TBR">TBR</option>
-                            <option value="READING">Reading</option>
-                            <option value="READ">Read</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-xs text-slate-400 mb-1 block">Pub. Status</label>
-                        <select id="inpStatus" class="input-field">
-                            <option value="WIP">WIP</option>
-                            <option value="COMPLETE">Complete</option>
-                        </select>
-                    </div>
+                    <select id="inpProgress" class="input-field" onchange="toggleDateUI()">
+                        <option value="TBR">TBR</option>
+                        <option value="READING">Reading</option>
+                        <option value="READ">Read</option>
+                    </select>
+                    <select id="inpStatus" class="input-field">
+                        <option value="WIP">WIP</option>
+                        <option value="COMPLETE">Complete</option>
+                    </select>
                 </div>
-                
+
                 <div>
                     <label class="text-xs text-slate-400 mb-1 block">Total Chapters</label>
                     <input type="number" id="inpChapters" placeholder="0" class="input-field">
                 </div>
 
-                <div class="flex gap-3 pt-4">
+                <div id="dateSection" class="hidden space-y-3 bg-slate-900/50 p-3 rounded-xl">
+                    <label class="text-xs text-emerald-400 font-bold block uppercase">Finished Dates</label>
+                    <div id="dateList" class="space-y-2"></div>
+                    <div class="flex gap-2">
+                        <input type="date" id="newDate" class="input-field text-xs">
+                        <button type="button" onclick="addDate()" class="bg-emerald-600 text-white px-3 rounded-lg text-xs font-bold">Add</button>
+                    </div>
+                </div>
+
+                <textarea id="inpSummary" placeholder="Summary..." rows="3" class="input-field text-sm"></textarea>
+                <input type="text" id="inpTags" placeholder="Tags (comma separated)" class="input-field text-sm">
+
+                <div class="flex gap-3 pt-6">
                     <button type="button" id="btnDelete" onclick="deleteManga()" class="hidden bg-red-500/10 text-red-400 px-4 rounded-xl border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
-                    <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold">Save Manga</button>
+                    <button type="submit" class="w-full bg-indigo-600 text-white p-3 rounded-xl font-bold">Save</button>
                 </div>
             </form>
         </div>
@@ -149,14 +161,12 @@
 
     <script>
         let manga = [];
-        let chartInstances = {};
+        let tempDates = [];
+        let chartInstance = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            const stored = localStorage.getItem('mangaTrackerData');
-            if (stored) {
-                manga = JSON.parse(stored);
-                renderLibrary();
-            }
+            const stored = localStorage.getItem('mangaLibData');
+            if (stored) { manga = JSON.parse(stored); renderLibrary(); }
             document.getElementById('fileInput').addEventListener('change', handleFileUpload);
             document.getElementById('mangaForm').addEventListener('submit', handleFormSubmit);
         });
@@ -167,98 +177,101 @@
             document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(`btn-${tab}`).classList.add('active');
             if(tab === 'dashboard') updateStats();
+            if(tab === 'report') updateReport();
         }
 
-        function saveData() {
-            localStorage.setItem('mangaTrackerData', JSON.stringify(manga));
-            renderLibrary();
+        function toggleDateUI() {
+            const isRead = document.getElementById('inpProgress').value === 'READ';
+            document.getElementById('dateSection').classList.toggle('hidden', !isRead);
+        }
+
+        function addDate() {
+            const d = document.getElementById('newDate').value;
+            if(d) { tempDates.push(d); renderDateList(); document.getElementById('newDate').value = ''; }
+        }
+
+        function removeDate(idx) { tempDates.splice(idx, 1); renderDateList(); }
+
+        function renderDateList() {
+            const container = document.getElementById('dateList');
+            container.innerHTML = tempDates.map((d, i) => `
+                <div class="flex justify-between items-center bg-slate-800 p-2 rounded text-xs border border-slate-700">
+                    <span class="font-mono text-indigo-300">${d}</span>
+                    <button type="button" onclick="removeDate(${i})" class="text-red-400"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            `).join('');
         }
 
         function renderLibrary() {
             const list = document.getElementById('mangaList');
             const search = document.getElementById('searchInput').value.toLowerCase();
-            const progFilter = document.getElementById('filterProgress').value;
-            const statFilter = document.getElementById('filterStatus').value;
+            const progF = document.getElementById('filterProgress').value;
+            const statF = document.getElementById('filterStatus').value;
 
             const filtered = manga.filter(m => {
-                const matchesSearch = m.name.toLowerCase().includes(search) || (m.link || '').toLowerCase().includes(search);
-                const matchesProg = progFilter === 'all' || m.progress === progFilter;
-                const matchesStat = statFilter === 'all' || m.status === statFilter;
+                const matchesSearch = m.name.toLowerCase().includes(search) || (m.tags || []).join(' ').toLowerCase().includes(search);
+                const matchesProg = progF === 'all' || m.progress === progF;
+                const matchesStat = statF === 'all' || m.status === statF;
                 return matchesSearch && matchesProg && matchesStat;
             });
 
-            list.innerHTML = filtered.length ? '' : '<p class="text-center text-slate-500 py-10">No manga found.</p>';
-
+            list.innerHTML = '';
             filtered.forEach(m => {
                 const source = m.link && m.link.includes('-') ? m.link.split('-').pop().trim() : 'Source';
-                const statusColor = m.status === 'COMPLETE' ? 'bg-emerald-900/30 text-emerald-400 border-emerald-500/20' : 'bg-amber-900/30 text-amber-400 border-amber-500/20';
-                const progColor = m.progress === 'READ' ? 'text-emerald-400' : (m.progress === 'READING' ? 'text-blue-400' : 'text-slate-500');
-
                 const card = document.createElement('div');
-                card.className = 'manga-card p-4 rounded-xl cursor-pointer';
-                card.onclick = () => openEditModal(m.id || m.name);
+                card.className = 'manga-card p-4 rounded-xl mb-3';
                 card.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1 pr-4">
+                    <div class="flex justify-between items-start" onclick="openEditModal('${m.id || m.name}')">
+                        <div class="flex-1">
                             <span class="badge bg-slate-700 text-indigo-300 border border-slate-600 mb-1">${source}</span>
                             <h3 class="font-bold text-lg text-white leading-tight">${m.name}</h3>
-                            <div class="flex items-center gap-3 mt-2">
-                                <span class="badge ${statusColor} border">${m.status}</span>
-                                <span class="text-xs font-bold ${progColor}"><i class="fa-solid fa-circle text-[6px] mr-1 mb-0.5"></i>${m.progress}</span>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                <span class="badge border ${m.status === 'COMPLETE' ? 'bg-emerald-900/20 text-emerald-400 border-emerald-500/20' : 'bg-amber-900/20 text-amber-400 border-amber-500/20'}">${m.status}</span>
+                                <span class="text-xs font-bold ${m.progress === 'READ' ? 'text-emerald-400' : 'text-blue-400'}">${m.progress}</span>
                             </div>
                         </div>
-                        <div class="text-right border-l border-slate-700/50 pl-4">
-                            <p class="text-xs text-slate-500 font-bold uppercase">Chapters</p>
-                            <p class="text-xl font-bold text-white">${m.chapters || 0}</p>
+                        <div class="flex flex-col items-end gap-3">
+                            <button onclick="event.stopPropagation(); openLink('${m.link}')" class="bg-indigo-500/10 text-indigo-400 p-2 rounded-lg border border-indigo-500/20"><i class="fa-solid fa-up-right-from-square"></i></button>
+                            <span class="text-xl font-bold text-white">${m.chapters || 0}<small class="text-[10px] text-slate-500 ml-1">ch</small></span>
                         </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-slate-700/50">
+                        <div class="flex flex-wrap gap-1 mb-2">${(m.tags || []).map(t => `<span class="tag-chip">${t}</span>`).join('')}</div>
+                        ${m.summary ? `<p class="text-xs text-slate-400 italic line-clamp-2">${m.summary}</p>` : ''}
                     </div>
                 `;
                 list.appendChild(card);
             });
         }
 
-        function updateStats() {
-            document.getElementById('stat-total').innerText = manga.length;
-            document.getElementById('stat-chapters').innerText = manga.reduce((s, m) => s + (m.chapters || 0), 0).toLocaleString();
-
-            renderChart('chartProgress', m => m.progress, ['#10b981', '#3b82f6', '#64748b'], 'Progress');
-            renderChart('chartStatus', m => m.status, ['#f59e0b', '#10b981'], 'Status');
-        }
-
-        function renderChart(id, keyFn, colors, instanceName) {
-            const counts = {};
-            manga.forEach(m => { const k = keyFn(m); counts[k] = (counts[k] || 0) + 1; });
-            const ctx = document.getElementById(id).getContext('2d');
-            if (chartInstances[instanceName]) chartInstances[instanceName].destroy();
-            chartInstances[instanceName] = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: Object.keys(counts),
-                    datasets: [{ data: Object.values(counts), backgroundColor: colors, borderWidth: 0 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#cbd5e1', font: { size: 11 } } } } }
-            });
-        }
-
-        function openAddModal() {
-            document.getElementById('mangaForm').reset();
-            document.getElementById('editId').value = '';
-            document.getElementById('modalTitle').innerText = 'Add Manga';
-            document.getElementById('btnDelete').classList.add('hidden');
-            document.getElementById('mangaModal').classList.remove('hidden');
+        function openLink(link) {
+            if(!link) return;
+            if(link.startsWith('http')) window.open(link, '_blank');
+            else window.open(`https://www.google.com/search?q=${encodeURIComponent(link)}`, '_blank');
         }
 
         function openEditModal(id) {
             const m = manga.find(x => (x.id === id || x.name === id));
-            if (!m) return;
+            if(!m) return;
             document.getElementById('editId').value = m.id || m.name;
             document.getElementById('inpName').value = m.name;
             document.getElementById('inpLink').value = m.link || '';
             document.getElementById('inpProgress').value = m.progress;
             document.getElementById('inpStatus').value = m.status;
             document.getElementById('inpChapters').value = m.chapters || 0;
-            document.getElementById('modalTitle').innerText = 'Edit Manga';
+            document.getElementById('inpSummary').value = m.summary || '';
+            document.getElementById('inpTags').value = (m.tags || []).join(', ');
+            tempDates = m.finishedDates ? [...m.finishedDates] : [];
+            renderDateList(); toggleDateUI();
             document.getElementById('btnDelete').classList.remove('hidden');
+            document.getElementById('mangaModal').classList.remove('hidden');
+        }
+
+        function openAddModal() {
+            document.getElementById('mangaForm').reset();
+            document.getElementById('editId').value = '';
+            tempDates = []; renderDateList(); toggleDateUI();
+            document.getElementById('btnDelete').classList.add('hidden');
             document.getElementById('mangaModal').classList.remove('hidden');
         }
 
@@ -273,23 +286,85 @@
                 link: document.getElementById('inpLink').value,
                 progress: document.getElementById('inpProgress').value,
                 status: document.getElementById('inpStatus').value,
-                chapters: parseInt(document.getElementById('inpChapters').value) || 0
+                chapters: parseInt(document.getElementById('inpChapters').value) || 0,
+                summary: document.getElementById('inpSummary').value,
+                tags: document.getElementById('inpTags').value.split(',').map(t => t.trim()).filter(t => t),
+                finishedDates: [...tempDates]
             };
-            if (id) {
+            if(id) {
                 const idx = manga.findIndex(x => (x.id === id || x.name === id));
                 manga[idx] = obj;
-            } else {
-                manga.unshift(obj);
-            }
-            saveData(); closeModal();
+            } else { manga.unshift(obj); }
+            localStorage.setItem('mangaLibData', JSON.stringify(manga));
+            renderLibrary(); closeModal();
         }
 
         function deleteManga() {
-            const id = document.getElementById('editId').value;
-            if(confirm("Remove this manga?")) {
+            if(confirm("Delete this entry?")) {
+                const id = document.getElementById('editId').value;
                 manga = manga.filter(x => (x.id !== id && x.name !== id));
-                saveData(); closeModal();
+                localStorage.setItem('mangaLibData', JSON.stringify(manga));
+                renderLibrary(); closeModal();
             }
+        }
+
+        function updateStats() {
+            const readCount = manga.filter(m => m.progress === 'READ').length;
+            document.getElementById('stat-total-read').innerText = readCount;
+            document.getElementById('stat-chapters').innerText = manga.reduce((s, m) => s + (m.chapters || 0), 0).toLocaleString();
+
+            const counts = { 'READ': 0, 'READING': 0, 'TBR': 0 };
+            manga.forEach(m => counts[m.progress]++);
+
+            const ctx = document.getElementById('chartProgress').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Read', 'Reading', 'TBR'],
+                    datasets: [{ data: Object.values(counts), backgroundColor: ['#10b981', '#3b82f6', '#475569'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#cbd5e1' } } } }
+            });
+        }
+
+        function updateReport() {
+            const container = document.getElementById('reportContent');
+            const picker = document.getElementById('historyYearPicker');
+            const allReads = [];
+            
+            manga.forEach(m => {
+                if(m.finishedDates) m.finishedDates.forEach(d => allReads.push({ name: m.name, date: new Date(d) }));
+            });
+
+            if(!allReads.length) { container.innerHTML = '<p class="text-center text-slate-500 py-10">No finished dates logged.</p>'; return; }
+
+            const years = [...new Set(allReads.map(r => r.date.getFullYear()))].sort((a,b) => b-a);
+            if(picker.innerHTML === '') {
+                years.forEach(y => picker.innerHTML += `<option value="${y}">${y}</option>`);
+            }
+
+            const year = parseInt(picker.value);
+            const filtered = allReads.filter(r => r.date.getFullYear() === year).sort((a,b) => b.date - a.date);
+            
+            const months = {};
+            filtered.forEach(r => {
+                const m = r.date.toLocaleString('default', { month: 'long' });
+                if(!months[m]) months[m] = [];
+                months[m].push(r);
+            });
+
+            container.innerHTML = '';
+            Object.entries(months).forEach(([name, reads]) => {
+                container.innerHTML += `
+                    <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+                        <div class="bg-slate-700/50 px-4 py-2 text-xs font-bold text-indigo-300 uppercase">${name}</div>
+                        <div class="p-4 space-y-2">
+                            ${reads.map(r => `<div class="flex justify-between text-sm"><span>${r.name}</span><span class="text-slate-500 font-mono">${r.date.getDate()}</span></div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            });
         }
 
         function handleFileUpload(e) {
@@ -299,22 +374,22 @@
                 try {
                     const data = JSON.parse(ev.target.result);
                     manga = Array.isArray(data) ? data : (data.manga || []);
-                    saveData();
-                    alert(`Loaded ${manga.length} titles.`);
-                } catch(e) { alert("Invalid JSON file."); }
+                    localStorage.setItem('mangaLibData', JSON.stringify(manga));
+                    renderLibrary();
+                } catch(e) { alert("Invalid JSON."); }
             };
             reader.readAsText(file);
         }
 
         function exportData() {
             const blob = new Blob([JSON.stringify(manga, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url; a.download = 'manga_tracker_backup.json';
+            a.href = URL.createObjectURL(blob);
+            a.download = 'mangwa_backup.json';
             a.click();
         }
 
-        function clearData() { if(confirm("Delete ALL data?")) { manga = []; saveData(); } }
+        function clearData() { if(confirm("Clear everything?")) { manga = []; localStorage.removeItem('mangaLibData'); renderLibrary(); } }
     </script>
 </body>
 </html>
