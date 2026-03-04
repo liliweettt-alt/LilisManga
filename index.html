@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MangaLib</title>
+    <title>MangaLib Orange v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -14,8 +14,7 @@
             --bg-body: #121212; 
             --bg-card: #1e1e1e; 
             --bg-input: #2a2a2a; 
-            --accent: #f59e0b;
-            --accent-dark: #d97706; 
+            --accent: #f59e0b; 
         }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-body); color: #e5e7eb; }
         .glass-nav { background-color: rgba(18, 18, 18, 0.96); border-top: 1px solid #2a2a2a; }
@@ -29,7 +28,6 @@
         .badge-orange { background: rgba(245, 158, 11, 0.1); color: var(--accent); border: 1px solid rgba(245, 158, 11, 0.2); }
         .tag-chip { font-size: 0.65rem; background: #2a2a2a; padding: 2px 8px; border-radius: 4px; color: #9ca3af; border: 1px solid #333; }
         
-      
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .animate-in { animation: slideUp 0.3s ease-out forwards; }
         @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -215,7 +213,6 @@
             const stored = localStorage.getItem('mangaLibData_Orange');
             if (stored) { manga = JSON.parse(stored); renderLibrary(); }
             document.getElementById('fileInput').addEventListener('change', handleFileUpload);
-            document.getElementById('mangaForm').addEventListener('submit', handleFormSubmit);
             document.getElementById('currentYear').innerText = new Date().getFullYear();
         });
 
@@ -226,6 +223,9 @@
             document.getElementById(`btn-${tab}`).classList.add('active');
             if(tab === 'dashboard') updateStats();
             if(tab === 'report') updateReport();
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function toggleDateUI() {
@@ -256,7 +256,7 @@
             const progF = document.getElementById('filterProgress').value;
 
             const filtered = manga.filter(m => {
-                const matchesSearch = m.name.toLowerCase().includes(search) || (m.tags || []).join(' ').toLowerCase().includes(search);
+                const matchesSearch = m.name.toLowerCase().includes(search) || (m.tags || []).join(' ').toLowerCase().includes(search) || (m.summary || '').toLowerCase().includes(search);
                 const matchesProg = progF === 'all' || m.progress === progF;
                 return matchesSearch && matchesProg;
             });
@@ -267,24 +267,35 @@
                 card.className = 'manga-card p-5 rounded-3xl animate-in';
                 if(m.progress === 'READING') card.style.borderLeftColor = '#f59e0b';
                 
+                // Construct Tags & Summary HTML
+                const tagsHtml = (m.tags && m.tags.length > 0) ? `<div class="mt-3 flex flex-wrap gap-1">${m.tags.slice(0, 4).map(t => `<span class="tag-chip">${t}</span>`).join('')}</div>` : '';
+                const summaryHtml = m.summary ? `<p class="text-[11px] text-gray-400 italic mt-2 line-clamp-2 leading-relaxed">${m.summary}</p>` : '';
+                
                 card.innerHTML = `
-                    <div class="flex justify-between items-start" onclick="openEditModal('${m.id}')">
+                    <div class="flex justify-between items-start cursor-pointer" onclick="openEditModal('${m.id}')">
                         <div class="flex-1 pr-4">
                             <h3 class="font-extrabold text-xl text-white leading-tight mb-2">${m.name}</h3>
-                            <div class="flex flex-wrap gap-1.5 mb-3">
+                            <div class="flex flex-wrap gap-1.5 mb-1">
                                 <span class="badge-orange text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-tighter">${m.status}</span>
                                 <span class="text-[9px] bg-white/5 px-2 py-0.5 rounded font-bold text-gray-400 uppercase tracking-tighter">${m.progress}</span>
                             </div>
                         </div>
                         <div class="flex flex-col items-end gap-3">
-                            <button onclick="event.stopPropagation(); openLink('${m.link}')" class="bg-orange-500/10 text-orange-500 w-10 h-10 rounded-xl flex items-center justify-center"><i class="fa-solid fa-link"></i></button>
+                            <button onclick="event.stopPropagation(); openLink('${m.link}')" class="bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 w-10 h-10 rounded-xl flex items-center justify-center transition-colors"><i class="fa-solid fa-link"></i></button>
                             <span class="text-xl font-black text-white">${m.chapters || 0}<small class="text-[10px] text-gray-500 ml-1">CH</small></span>
                         </div>
                     </div>
-                    <div class="mt-2 flex flex-wrap gap-1">${(m.tags || []).slice(0, 4).map(t => `<span class="tag-chip">${t}</span>`).join('')}</div>
+                    <div onclick="openEditModal('${m.id}')" class="cursor-pointer">
+                        ${tagsHtml}
+                        ${summaryHtml}
+                    </div>
                 `;
                 list.appendChild(card);
             });
+            
+            if (filtered.length === 0) {
+                list.innerHTML = `<p class="text-center text-gray-500 py-10">No titles match your search.</p>`;
+            }
         }
 
         function openLink(link) {
@@ -313,7 +324,10 @@
 
             // Chart
             const counts = { 'READ': 0, 'READING': 0, 'TBR': 0 };
-            manga.forEach(m => counts[m.progress]++);
+            manga.forEach(m => {
+                if(counts[m.progress] !== undefined) counts[m.progress]++;
+            });
+            
             const ctx = document.getElementById('chartProgress').getContext('2d');
             if(chartInstance) chartInstance.destroy();
             chartInstance = new Chart(ctx, {
@@ -321,7 +335,7 @@
                 data: {
                     labels: ['Read', 'Reading', 'TBR'],
                     datasets: [{ 
-                        data: Object.values(counts), 
+                        data: [counts['READ'], counts['READING'], counts['TBR']], 
                         backgroundColor: ['#f59e0b', '#4b5563', '#1f2937'],
                         borderWidth: 0,
                         hoverOffset: 4
@@ -338,7 +352,11 @@
 
         function setGoal() {
             const g = prompt("Set yearly manga goal:", readingGoal);
-            if(g) { readingGoal = g; localStorage.setItem('mangaGoal', g); updateStats(); }
+            if(g && !isNaN(g) && parseInt(g) > 0) { 
+                readingGoal = parseInt(g); 
+                localStorage.setItem('mangaGoal', readingGoal); 
+                updateStats(); 
+            }
         }
 
         function openEditModal(id) {
@@ -421,16 +439,32 @@
 
         function handleFileUpload(e) {
             const file = e.target.files[0];
+            if (!file) return;
+            
             const reader = new FileReader();
             reader.onload = (ev) => {
                 try {
                     const data = JSON.parse(ev.target.result);
-                    manga = Array.isArray(data) ? data : (data.manga || []);
+                    let importedManga = Array.isArray(data) ? data : (data.manga || []);
+                    
                     // Assign random IDs if missing
-                    manga = manga.map(m => ({...m, id: m.id || crypto.randomUUID()}));
+                    importedManga = importedManga.map(m => ({...m, id: m.id || crypto.randomUUID()}));
+                    manga = importedManga; // Replace existing data
+                    
                     localStorage.setItem('mangaLibData_Orange', JSON.stringify(manga));
                     renderLibrary();
-                } catch(e) { alert("Error parsing JSON."); }
+                    
+                    // Notify user and redirect to Library
+                    alert(`Success! Imported ${manga.length} titles into your library.`);
+                    switchTab('library');
+                    
+                    // Reset file input so you can re-upload the same file if needed
+                    document.getElementById('fileInput').value = '';
+                    
+                } catch(err) { 
+                    alert("Error parsing JSON. Please make sure the file format is correct."); 
+                    console.error(err);
+                }
             };
             reader.readAsText(file);
         }
@@ -443,7 +477,14 @@
             a.click();
         }
 
-        function clearData() { if(confirm("Permanently wipe library?")) { manga = []; localStorage.removeItem('mangaLibData_Orange'); renderLibrary(); } }
+        function clearData() { 
+            if(confirm("Permanently wipe library? This cannot be undone.")) { 
+                manga = []; 
+                localStorage.removeItem('mangaLibData_Orange'); 
+                renderLibrary(); 
+                alert("Library cleared.");
+            } 
+        }
     </script>
 </body>
 </html>
