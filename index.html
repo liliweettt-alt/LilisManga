@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MangaLib Orange v2</title>
+    <title>MangaLib</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -66,12 +66,20 @@
                     <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-gray-500"></i>
                     <input type="text" id="searchInput" placeholder="Search title or tags..." class="input-field pl-11 bg-[#1a1a1a]" onkeyup="renderLibrary()">
                 </div>
-                <div class="flex gap-2 overflow-x-auto no-scrollbar">
-                    <select id="filterProgress" onchange="renderLibrary()" class="bg-[#1a1a1a] text-xs p-2.5 rounded-lg border border-[#333] text-gray-300">
+                <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                    <select id="filterProgress" onchange="renderLibrary()" class="bg-[#1a1a1a] text-[11px] font-bold p-2.5 rounded-lg border border-[#333] text-gray-300 min-w-max outline-none focus:border-orange-500">
                         <option value="all">Any Progress</option>
                         <option value="READING">Currently Reading</option>
                         <option value="TBR">To Read</option>
                         <option value="READ">Finished</option>
+                    </select>
+                    <select id="filterTags" onchange="renderLibrary()" class="bg-[#1a1a1a] text-[11px] font-bold p-2.5 rounded-lg border border-[#333] text-gray-300 min-w-max outline-none focus:border-orange-500">
+                        <option value="all">Tag: All</option>
+                        </select>
+                    <select id="sortOption" onchange="renderLibrary()" class="bg-[#1a1a1a] text-[11px] font-bold p-2.5 rounded-lg border border-[#333] text-gray-300 min-w-max outline-none focus:border-orange-500">
+                        <option value="newest">Sort: Newest</option>
+                        <option value="az">Sort: A-Z</option>
+                        <option value="chapters">Sort: Length (Ch)</option>
                     </select>
                 </div>
             </div>
@@ -191,7 +199,12 @@
                 </div>
 
                 <div>
-                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2 block">Tags</label>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 block">Tags</label>
+                        <select id="selTagsHelper" class="bg-[#2a2a2a] text-[10px] text-orange-500 font-bold border-none rounded px-2 py-1 max-w-[120px] outline-none" onchange="pickSuggestion('inpTags', 'selTagsHelper')">
+                            <option value="">Select used...</option>
+                        </select>
+                    </div>
                     <input type="text" id="inpTags" placeholder="Action, Romance..." class="input-field text-sm">
                 </div>
 
@@ -224,7 +237,6 @@
             if(tab === 'dashboard') updateStats();
             if(tab === 'report') updateReport();
             
-            // Scroll to top
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -250,15 +262,62 @@
             `).join('');
         }
 
+        // --- TAG HELPER & DROPDOWNS ---
+        function populateFilterDropdowns() {
+            const tagSet = new Set();
+            manga.forEach(m => { (m.tags || []).forEach(t => tagSet.add(t.trim())); });
+            const tags = Array.from(tagSet).sort((a,b) => a.localeCompare(b));
+
+            // Library Filter
+            const filterSelect = document.getElementById('filterTags');
+            const currentFilter = filterSelect.value;
+            filterSelect.innerHTML = `<option value="all">Tag: All</option>`;
+            tags.forEach(t => { if(t) filterSelect.innerHTML += `<option value="${t}">${t}</option>`; });
+            if(tags.includes(currentFilter)) filterSelect.value = currentFilter;
+
+            // Modal Helper
+            const helperSelect = document.getElementById('selTagsHelper');
+            helperSelect.innerHTML = `<option value="">Select used...</option>`;
+            tags.forEach(t => { if(t) helperSelect.innerHTML += `<option value="${t}">${t}</option>`; });
+        }
+
+        function pickSuggestion(inputId, selectId) {
+            const select = document.getElementById(selectId);
+            const input = document.getElementById(inputId);
+            const val = select.value;
+            if(!val) return;
+            
+            let current = input.value.split(',').map(s => s.trim()).filter(s => s);
+            if(!current.includes(val)) {
+                current.push(val);
+                input.value = current.join(', ');
+            }
+            select.value = ''; // Reset helper dropdown
+        }
+
+        // --- RENDER LIBRARY ---
         function renderLibrary() {
+            populateFilterDropdowns(); // Re-populate tags whenever library renders
+
             const list = document.getElementById('mangaList');
             const search = document.getElementById('searchInput').value.toLowerCase();
             const progF = document.getElementById('filterProgress').value;
+            const tagF = document.getElementById('filterTags').value;
+            const sortOpt = document.getElementById('sortOption').value;
 
-            const filtered = manga.filter(m => {
+            // Filter
+            let filtered = manga.filter(m => {
                 const matchesSearch = m.name.toLowerCase().includes(search) || (m.tags || []).join(' ').toLowerCase().includes(search) || (m.summary || '').toLowerCase().includes(search);
                 const matchesProg = progF === 'all' || m.progress === progF;
-                return matchesSearch && matchesProg;
+                const matchesTag = tagF === 'all' || (m.tags && m.tags.includes(tagF));
+                return matchesSearch && matchesProg && matchesTag;
+            });
+
+            // Sort
+            filtered.sort((a, b) => {
+                if (sortOpt === 'az') return a.name.localeCompare(b.name);
+                if (sortOpt === 'chapters') return (b.chapters || 0) - (a.chapters || 0); // Longest first
+                return 0; // 'newest' uses default array order
             });
 
             list.innerHTML = '';
@@ -267,7 +326,6 @@
                 card.className = 'manga-card p-5 rounded-3xl animate-in';
                 if(m.progress === 'READING') card.style.borderLeftColor = '#f59e0b';
                 
-                // Construct Tags & Summary HTML
                 const tagsHtml = (m.tags && m.tags.length > 0) ? `<div class="mt-3 flex flex-wrap gap-1">${m.tags.slice(0, 4).map(t => `<span class="tag-chip">${t}</span>`).join('')}</div>` : '';
                 const summaryHtml = m.summary ? `<p class="text-[11px] text-gray-400 italic mt-2 line-clamp-2 leading-relaxed">${m.summary}</p>` : '';
                 
@@ -294,7 +352,7 @@
             });
             
             if (filtered.length === 0) {
-                list.innerHTML = `<p class="text-center text-gray-500 py-10">No titles match your search.</p>`;
+                list.innerHTML = `<p class="text-center text-gray-500 py-10">No titles match your criteria.</p>`;
             }
         }
 
@@ -447,18 +505,15 @@
                     const data = JSON.parse(ev.target.result);
                     let importedManga = Array.isArray(data) ? data : (data.manga || []);
                     
-                    // Assign random IDs if missing
                     importedManga = importedManga.map(m => ({...m, id: m.id || crypto.randomUUID()}));
-                    manga = importedManga; // Replace existing data
+                    manga = importedManga; 
                     
                     localStorage.setItem('mangaLibData_Orange', JSON.stringify(manga));
                     renderLibrary();
                     
-                    // Notify user and redirect to Library
                     alert(`Success! Imported ${manga.length} titles into your library.`);
                     switchTab('library');
                     
-                    // Reset file input so you can re-upload the same file if needed
                     document.getElementById('fileInput').value = '';
                     
                 } catch(err) { 
