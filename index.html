@@ -73,6 +73,11 @@
                         <option value="TBR">To Read</option>
                         <option value="READ">Finished</option>
                     </select>
+                    <select id="filterStatus" onchange="renderLibrary()" class="bg-[#1a1a1a] text-[11px] font-bold p-2.5 rounded-lg border border-[#333] text-gray-300 min-w-max outline-none focus:border-orange-500">
+                        <option value="all">Any Status</option>
+                        <option value="WIP">WIP</option>
+                        <option value="COMPLETE">Complete</option>
+                    </select>
                     <select id="filterTags" onchange="renderLibrary()" class="bg-[#1a1a1a] text-[11px] font-bold p-2.5 rounded-lg border border-[#333] text-gray-300 min-w-max outline-none focus:border-orange-500">
                         <option value="all">Tag: All</option>
                     </select>
@@ -89,14 +94,18 @@
         <div id="tab-dashboard" class="tab-content hidden animate-in">
             <h1 class="text-3xl font-extrabold mb-6">Analytics</h1>
             
-            <div class="grid grid-cols-2 gap-3 mb-6">
-                <div class="bg-[#1a1a1a] p-5 rounded-2xl border border-[#333]">
-                    <p class="text-[10px] text-orange-500 uppercase font-black tracking-widest">Reading Now</p>
-                    <p class="text-3xl font-bold text-white mt-1" id="stat-reading">0</p>
+            <div class="grid grid-cols-3 gap-2 mb-6">
+                <div class="bg-[#1a1a1a] p-4 rounded-2xl border border-[#333] flex flex-col items-center justify-center text-center">
+                    <p class="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Total</p>
+                    <p class="text-2xl font-bold text-white" id="stat-total-works">0</p>
                 </div>
-                <div class="bg-[#1a1a1a] p-5 rounded-2xl border border-[#333]">
-                    <p class="text-[10px] text-gray-500 uppercase font-black tracking-widest">Completed</p>
-                    <p class="text-3xl font-bold text-white mt-1" id="stat-finished">0</p>
+                <div class="bg-[#1a1a1a] p-4 rounded-2xl border border-[#333] flex flex-col items-center justify-center text-center">
+                    <p class="text-[9px] text-orange-500 uppercase font-black tracking-widest mb-1">Reading</p>
+                    <p class="text-2xl font-bold text-white" id="stat-reading">0</p>
+                </div>
+                <div class="bg-[#1a1a1a] p-4 rounded-2xl border border-[#333] flex flex-col items-center justify-center text-center">
+                    <p class="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Done</p>
+                    <p class="text-2xl font-bold text-white" id="stat-finished">0</p>
                 </div>
             </div>
 
@@ -205,7 +214,7 @@
                             <option value="">Select used...</option>
                         </select>
                     </div>
-                    <input type="text" id="inpTags" placeholder="Action, Romance..." class="input-field text-sm">
+                    <textarea id="inpTags" placeholder="Action, Romance..." rows="2" class="input-field text-sm"></textarea>
                 </div>
 
                 <div class="flex gap-4 pt-6">
@@ -222,12 +231,10 @@
         let chartInstance = null;
         let readingGoal = localStorage.getItem('mangaGoal') || 20;
 
-        // SAFE ID GENERATOR (Works correctly on local file:// files)
         function generateId() {
             return Date.now().toString(36) + Math.random().toString(36).substring(2);
         }
 
-        // BACKGROUND CLEANER: Ensures all data has a safe ID
         function ensureDataIntegrity() {
             let changed = false;
             manga.forEach(m => {
@@ -245,7 +252,7 @@
             const stored = localStorage.getItem('mangaLibData_Orange');
             if (stored) { 
                 manga = JSON.parse(stored); 
-                ensureDataIntegrity(); // Run the cleaner
+                ensureDataIntegrity();
                 renderLibrary(); 
             }
             document.getElementById('fileInput').addEventListener('change', handleFileUpload);
@@ -322,14 +329,16 @@
             const list = document.getElementById('mangaList');
             const search = document.getElementById('searchInput').value.toLowerCase();
             const progF = document.getElementById('filterProgress').value;
+            const statF = document.getElementById('filterStatus').value;
             const tagF = document.getElementById('filterTags').value;
             const sortOpt = document.getElementById('sortOption').value;
 
             let filtered = manga.filter(m => {
                 const matchesSearch = m.name.toLowerCase().includes(search) || (m.tags || []).join(' ').toLowerCase().includes(search) || (m.summary || '').toLowerCase().includes(search);
                 const matchesProg = progF === 'all' || m.progress === progF;
+                const matchesStat = statF === 'all' || m.status === statF;
                 const matchesTag = tagF === 'all' || (m.tags && m.tags.includes(tagF));
-                return matchesSearch && matchesProg && matchesTag;
+                return matchesSearch && matchesProg && matchesStat && matchesTag;
             });
 
             filtered.sort((a, b) => {
@@ -341,31 +350,32 @@
             list.innerHTML = '';
             filtered.forEach(m => {
                 const card = document.createElement('div');
-                card.className = 'manga-card p-5 rounded-3xl animate-in';
+                card.className = 'manga-card p-5 rounded-3xl animate-in flex flex-col';
                 if(m.progress === 'READING') card.style.borderLeftColor = '#f59e0b';
+                const tagsHtml = (m.tags && m.tags.length > 0) ? `<div class="mt-2 flex flex-wrap gap-1">${m.tags.slice(0, 4).map(t => `<span class="tag-chip">${t}</span>`).join('')}</div>` : '';
+                const summaryHtml = m.summary ? `<p class="text-[11px] text-gray-400 italic mt-3 line-clamp-2 leading-relaxed">${m.summary}</p>` : '';
                 
-                const tagsHtml = (m.tags && m.tags.length > 0) ? `<div class="mt-3 flex flex-wrap gap-1">${m.tags.slice(0, 4).map(t => `<span class="tag-chip">${t}</span>`).join('')}</div>` : '';
-                const summaryHtml = m.summary ? `<p class="text-[11px] text-gray-400 italic mt-2 line-clamp-2 leading-relaxed">${m.summary}</p>` : '';
-                
-                // Safe escaping for onclick 
                 const safeId = m.id.replace(/'/g, "\\'");
 
                 card.innerHTML = `
                     <div class="flex justify-between items-start cursor-pointer" onclick="openEditModal('${safeId}')">
-                        <div class="flex-1 pr-4">
+                        <div class="flex-1 pr-3">
                             <h3 class="font-extrabold text-xl text-white leading-tight mb-2">${m.name}</h3>
-                            <div class="flex flex-wrap gap-1.5 mb-1">
+                            <div class="flex flex-wrap gap-1.5">
                                 <span class="badge-orange text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-tighter">${m.status}</span>
                                 <span class="text-[9px] bg-white/5 px-2 py-0.5 rounded font-bold text-gray-400 uppercase tracking-tighter">${m.progress}</span>
                             </div>
+                            ${tagsHtml}
                         </div>
-                        <div class="flex flex-col items-end gap-3">
+                        <div class="flex flex-col items-end gap-3 shrink-0">
                             <button onclick="event.stopPropagation(); openLink('${m.link}')" class="bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 w-10 h-10 rounded-xl flex items-center justify-center transition-colors"><i class="fa-solid fa-link"></i></button>
-                            <span class="text-xl font-black text-white">${m.chapters || 0}<small class="text-[10px] text-gray-500 ml-1">CH</small></span>
+                            <div class="text-right">
+                                <span class="text-xl font-black text-white">${m.chapters || 0}</span>
+                                <span class="text-[9px] text-gray-500 font-bold ml-0.5 tracking-widest">CH</span>
+                            </div>
                         </div>
                     </div>
                     <div onclick="openEditModal('${safeId}')" class="cursor-pointer">
-                        ${tagsHtml}
                         ${summaryHtml}
                     </div>
                 `;
@@ -384,6 +394,8 @@
         }
 
         function updateStats() {
+            document.getElementById('stat-total-works').innerText = manga.length;
+            
             const reading = manga.filter(m => m.progress === 'READING').length;
             const finished = manga.filter(m => m.progress === 'READ').length;
             
