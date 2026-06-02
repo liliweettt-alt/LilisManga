@@ -69,6 +69,7 @@
                 <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                     <select id="filterProgress" onchange="renderLibrary()" class="bg-[#1a1a1a] text-[11px] font-bold p-2.5 rounded-lg border border-[#333] text-gray-300 min-w-max outline-none focus:border-orange-500">
                         <option value="all">Any Progress</option>
+                        <option value="PINNED">📌 Pinned Only</option>
                         <option value="READING">Currently Reading</option>
                         <option value="TBR">To Read</option>
                         <option value="READ">Finished</option>
@@ -107,6 +108,20 @@
                     <p class="text-[9px] text-gray-400 uppercase font-black tracking-widest mb-1">Done</p>
                     <p class="text-2xl font-bold text-white" id="stat-finished">0</p>
                 </div>
+                <div class="bg-[#1a1a1a] p-4 rounded-2xl border border-[#333] flex flex-col items-center justify-center text-center">
+                    <p class="text-[9px] text-amber-400 uppercase font-black tracking-widest mb-1">Avg Rtg</p>
+                    <p class="text-2xl font-bold text-white" id="stat-avg-rating">-</p>
+                </div>
+                <div class="bg-[#1a1a1a] p-4 rounded-2xl border border-[#333] flex flex-col items-center justify-center text-center">
+                    <p class="text-[9px] text-amber-400 uppercase font-black tracking-widest mb-1">Top Rated</p>
+                    <p class="text-xs font-bold text-white line-clamp-2" id="stat-top-rated">-</p>
+                </div>
+                <div class="bg-[#1a1a1a] p-4 rounded-2xl border border-[#333] flex flex-col items-center justify-center text-center">
+                    <p class="text-[9px] text-orange-500 uppercase font-black tracking-widest mb-1">Streak</p>
+                    <p class="text-2xl font-bold text-white flex items-baseline gap-1">
+                        <span id="stat-streak">0</span><span class="text-[9px] text-gray-500 tracking-widest">MO</span>
+                    </p>
+                </div>
             </div>
 
             <div class="bg-[#1a1a1a] p-6 rounded-3xl border border-[#333] mb-6 relative overflow-hidden">
@@ -123,9 +138,14 @@
                 <p class="text-right text-xs mt-2 font-bold"><span id="goalCount">0</span> / <span id="goalTotal">20</span></p>
             </div>
 
-            <div class="bg-[#1a1a1a] p-4 rounded-3xl border border-[#333]">
+            <div class="bg-[#1a1a1a] p-4 rounded-3xl border border-[#333] mb-6">
                 <h3 class="text-xs font-black text-gray-500 mb-4 uppercase text-center tracking-widest">Library Mix</h3>
                 <div class="h-48"><canvas id="chartProgress"></canvas></div>
+            </div>
+
+            <div class="bg-[#1a1a1a] p-4 rounded-3xl border border-[#333]">
+                <h3 class="text-xs font-black text-gray-500 mb-4 uppercase text-center tracking-widest">Finished This Year</h3>
+                <div class="h-48"><canvas id="chartMonthly"></canvas></div>
             </div>
         </div>
 
@@ -201,9 +221,27 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2 block">Current Chapter</label>
+                        <input type="number" id="inpCurrentChapter" placeholder="0" class="input-field">
+                    </div>
+                    <div>
+                        <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2 block">Total Chapters</label>
+                        <input type="number" id="inpChapters" placeholder="0" class="input-field">
+                    </div>
+                </div>
+
                 <div>
-                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2 block">Chapters</label>
-                    <input type="number" id="inpChapters" placeholder="0" class="input-field">
+                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2 block">Star Rating</label>
+                    <div class="flex gap-3 text-3xl text-[#333] justify-center bg-black/20 py-3 rounded-xl" id="starContainer">
+                        <i class="fa-solid fa-star cursor-pointer transition-colors" onclick="setRatingUI(1)"></i>
+                        <i class="fa-solid fa-star cursor-pointer transition-colors" onclick="setRatingUI(2)"></i>
+                        <i class="fa-solid fa-star cursor-pointer transition-colors" onclick="setRatingUI(3)"></i>
+                        <i class="fa-solid fa-star cursor-pointer transition-colors" onclick="setRatingUI(4)"></i>
+                        <i class="fa-solid fa-star cursor-pointer transition-colors" onclick="setRatingUI(5)"></i>
+                    </div>
+                    <input type="hidden" id="inpRating" value="0">
                 </div>
 
                 <div id="dateSection" class="hidden space-y-3 bg-black/30 p-4 rounded-2xl">
@@ -217,7 +255,12 @@
 
                 <div>
                     <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2 block">Summary</label>
-                    <textarea id="inpSummary" placeholder="..." rows="3" class="input-field text-sm"></textarea>
+                    <textarea id="inpSummary" placeholder="Story premise..." rows="2" class="input-field text-sm"></textarea>
+                </div>
+
+                <div>
+                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2 block">My Notes</label>
+                    <textarea id="inpNotes" placeholder="Personal thoughts, favorite moments..." rows="3" class="input-field text-sm bg-black/40 border-dashed"></textarea>
                 </div>
 
                 <div>
@@ -232,7 +275,7 @@
 
                 <div class="flex gap-4 pt-6">
                     <button type="button" id="btnDelete" onclick="deleteManga()" class="hidden bg-red-500/10 text-red-500 px-6 rounded-2xl border border-red-500/20"><i class="fa-solid fa-trash"></i></button>
-                    <button type="submit" class="w-full btn-primary p-4 rounded-2xl">Update Library</button>
+                    <button type="submit" id="btnSubmitModal" class="w-full btn-primary p-4 rounded-2xl">Save Changes</button>
                 </div>
             </form>
         </div>
@@ -241,8 +284,20 @@
     <script>
         let manga = [];
         let tempDates = [];
-        let chartInstance = null;
+        let chartProgressInstance = null;
+        let chartMonthlyInstance = null;
         let readingGoal = localStorage.getItem('mangaGoal') || 20;
+
+        // XSS Helper Function
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
 
         function generateId() {
             return Date.now().toString(36) + Math.random().toString(36).substring(2);
@@ -306,6 +361,20 @@
             `).join('');
         }
 
+        function setRatingUI(val) {
+            document.getElementById('inpRating').value = val;
+            const stars = document.getElementById('starContainer').children;
+            for(let i=0; i<5; i++) {
+                if(i < val) {
+                    stars[i].classList.remove('text-[#333]');
+                    stars[i].classList.add('text-amber-500');
+                } else {
+                    stars[i].classList.remove('text-amber-500');
+                    stars[i].classList.add('text-[#333]');
+                }
+            }
+        }
+
         function populateFilterDropdowns() {
             const tagSet = new Set();
             manga.forEach(m => { (m.tags || []).forEach(t => tagSet.add(t.trim())); });
@@ -314,12 +383,12 @@
             const filterSelect = document.getElementById('filterTags');
             const currentFilter = filterSelect.value;
             filterSelect.innerHTML = `<option value="all">Tag: All</option>`;
-            tags.forEach(t => { if(t) filterSelect.innerHTML += `<option value="${t}">${t}</option>`; });
+            tags.forEach(t => { if(t) filterSelect.innerHTML += `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`; });
             if(tags.includes(currentFilter)) filterSelect.value = currentFilter;
 
             const helperSelect = document.getElementById('selTagsHelper');
             helperSelect.innerHTML = `<option value="">Select used...</option>`;
-            tags.forEach(t => { if(t) helperSelect.innerHTML += `<option value="${t}">${t}</option>`; });
+            tags.forEach(t => { if(t) helperSelect.innerHTML += `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`; });
         }
 
         function pickSuggestion(inputId, selectId) {
@@ -336,6 +405,15 @@
             select.value = ''; 
         }
 
+        function togglePin(id) {
+            const m = manga.find(x => x.id === id);
+            if(m) {
+                m.pinned = !m.pinned;
+                localStorage.setItem('mangaLibData_Orange', JSON.stringify(manga));
+                renderLibrary();
+            }
+        }
+
         function renderLibrary() {
             populateFilterDropdowns(); 
 
@@ -348,13 +426,17 @@
 
             let filtered = manga.filter(m => {
                 const matchesSearch = m.name.toLowerCase().includes(search) || (m.tags || []).join(' ').toLowerCase().includes(search) || (m.summary || '').toLowerCase().includes(search);
-                const matchesProg = progF === 'all' || m.progress === progF;
+                const matchesProg = progF === 'all' ? true : (progF === 'PINNED' ? m.pinned : m.progress === progF);
                 const matchesStat = statF === 'all' || m.status === statF;
                 const matchesTag = tagF === 'all' || (m.tags && m.tags.includes(tagF));
                 return matchesSearch && matchesProg && matchesStat && matchesTag;
             });
 
             filtered.sort((a, b) => {
+                // Pinned always bubble to top
+                if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+                
+                // Normal secondary sort
                 if (sortOpt === 'az') return a.name.localeCompare(b.name);
                 if (sortOpt === 'chapters') return (b.chapters || 0) - (a.chapters || 0); 
                 return 0; 
@@ -363,28 +445,43 @@
             list.innerHTML = '';
             filtered.forEach(m => {
                 const card = document.createElement('div');
-                card.className = 'manga-card p-5 rounded-3xl animate-in flex flex-col';
+                card.className = 'manga-card p-5 rounded-3xl animate-in flex flex-col relative';
                 if(m.progress === 'READING') card.style.borderLeftColor = '#f59e0b';
                 
-                const tagsHtml = (m.tags && m.tags.length > 0) ? `<div class="mt-2 flex flex-wrap gap-1">${m.tags.slice(0, 4).map(t => `<span class="tag-chip">${t}</span>`).join('')}</div>` : '';
-                const summaryHtml = m.summary ? `<p class="text-[11px] text-gray-400 italic mt-3 line-clamp-2 leading-relaxed">${m.summary}</p>` : '';
+                const safeName = escapeHtml(m.name);
+                const safeSummary = escapeHtml(m.summary);
+                
+                const tagsHtml = (m.tags && m.tags.length > 0) ? `<div class="mt-2 flex flex-wrap gap-1">${m.tags.slice(0, 4).map(t => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</div>` : '';
+                const summaryHtml = m.summary ? `<p class="text-[11px] text-gray-400 italic mt-3 line-clamp-2 leading-relaxed">${safeSummary}</p>` : '';
+                const ratingHtml = m.rating ? `<div class="mt-2 text-amber-500 text-[10px] tracking-widest">${'★'.repeat(m.rating)}${'<span class="text-gray-600">★</span>'.repeat(5-m.rating)}</div>` : '';
                 
                 const safeId = m.id.replace(/'/g, "\\'");
+
+                let chText = '0';
+                if (m.currentChapter && m.chapters) chText = `${m.currentChapter} / ${m.chapters}`;
+                else if (m.currentChapter) chText = m.currentChapter;
+                else if (m.chapters) chText = m.chapters;
+
+                const pinClass = m.pinned ? 'text-amber-500' : 'text-gray-600 hover:text-amber-500';
 
                 card.innerHTML = `
                     <div class="flex justify-between items-start cursor-pointer" onclick="openEditModal('${safeId}')">
                         <div class="flex-1 pr-3">
-                            <h3 class="font-extrabold text-xl text-white leading-tight mb-2">${m.name}</h3>
+                            <h3 class="font-extrabold text-xl text-white leading-tight mb-2 pr-6">${safeName}</h3>
                             <div class="flex flex-wrap gap-1.5">
                                 <span class="badge-orange text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-tighter">${m.status}</span>
                                 <span class="text-[9px] bg-white/5 px-2 py-0.5 rounded font-bold text-gray-400 uppercase tracking-tighter">${m.progress}</span>
                             </div>
                             ${tagsHtml}
+                            ${ratingHtml}
                         </div>
                         <div class="flex flex-col items-end gap-3 shrink-0">
-                            <button onclick="event.stopPropagation(); openLink('${m.link}')" class="bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 w-10 h-10 rounded-xl flex items-center justify-center transition-colors"><i class="fa-solid fa-link"></i></button>
+                            <div class="flex gap-2">
+                                <button onclick="event.stopPropagation(); togglePin('${safeId}')" class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${m.pinned ? 'bg-amber-500/10 text-amber-500' : 'bg-transparent text-gray-600 hover:bg-[#2a2a2a]'}"><i class="fa-solid fa-thumbtack"></i></button>
+                                <button onclick="event.stopPropagation(); openLink('${m.link}')" class="bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 w-10 h-10 rounded-xl flex items-center justify-center transition-colors"><i class="fa-solid fa-link"></i></button>
+                            </div>
                             <div class="text-right">
-                                <span class="text-xl font-black text-white">${m.chapters || 0}</span>
+                                <span class="text-xl font-black text-white">${chText}</span>
                                 <span class="text-[9px] text-gray-500 font-bold ml-0.5 tracking-widest">CH</span>
                             </div>
                         </div>
@@ -408,32 +505,76 @@
         }
 
         function updateStats() {
+            // General Stats
             document.getElementById('stat-total-works').innerText = manga.length;
-            
-            const reading = manga.filter(m => m.progress === 'READING').length;
-            const finished = manga.filter(m => m.progress === 'READ').length;
-            
-            document.getElementById('stat-reading').innerText = reading;
-            document.getElementById('stat-finished').innerText = finished;
+            document.getElementById('stat-reading').innerText = manga.filter(m => m.progress === 'READING').length;
+            document.getElementById('stat-finished').innerText = manga.filter(m => m.progress === 'READ').length;
 
+            // Rating Stats
+            const ratedTitles = manga.filter(m => m.rating > 0);
+            if (ratedTitles.length > 0) {
+                const avg = ratedTitles.reduce((sum, m) => sum + parseInt(m.rating), 0) / ratedTitles.length;
+                document.getElementById('stat-avg-rating').innerText = avg.toFixed(1);
+                
+                const topRated = ratedTitles.reduce((prev, current) => (parseInt(prev.rating) > parseInt(current.rating)) ? prev : current);
+                document.getElementById('stat-top-rated').innerText = topRated.name;
+            } else {
+                document.getElementById('stat-avg-rating').innerText = '-';
+                document.getElementById('stat-top-rated').innerText = 'None';
+            }
+
+            // Streak & Goal Calculations
+            const finishedMonths = new Set();
             const currentYear = new Date().getFullYear();
-            const finishedThisYear = manga.filter(m => 
-                m.finishedDates && m.finishedDates.some(d => new Date(d).getFullYear() === currentYear)
-            ).length;
+            let finishedThisYear = 0;
+            const monthlyCounts = new Array(12).fill(0);
 
+            manga.forEach(m => {
+                if(m.finishedDates) {
+                    m.finishedDates.forEach(d => {
+                        const date = new Date(d);
+                        finishedMonths.add(`${date.getFullYear()}-${date.getMonth()}`);
+                        
+                        if (date.getFullYear() === currentYear) {
+                            finishedThisYear++;
+                            monthlyCounts[date.getMonth()]++;
+                        }
+                    });
+                }
+            });
+
+            // Calculate Streak
+            let streak = 0;
+            let currDate = new Date();
+            let checkY = currDate.getFullYear();
+            let checkM = currDate.getMonth();
+            
+            // If they haven't read this month, start checking from last month
+            if (!finishedMonths.has(`${checkY}-${checkM}`)) {
+                checkM--;
+                if (checkM < 0) { checkM = 11; checkY--; }
+            }
+            
+            while(finishedMonths.has(`${checkY}-${checkM}`)) {
+                streak++;
+                checkM--;
+                if (checkM < 0) { checkM = 11; checkY--; }
+            }
+            document.getElementById('stat-streak').innerText = streak;
+
+            // Goal Progress
             document.getElementById('goalCount').innerText = finishedThisYear;
             document.getElementById('goalTotal').innerText = readingGoal;
             const percent = Math.min((finishedThisYear / readingGoal) * 100, 100);
             document.getElementById('goalBar').style.width = percent + '%';
 
+            // Doughnut Chart (Progress)
             const counts = { 'READ': 0, 'READING': 0, 'TBR': 0 };
-            manga.forEach(m => {
-                if(counts[m.progress] !== undefined) counts[m.progress]++;
-            });
+            manga.forEach(m => { if(counts[m.progress] !== undefined) counts[m.progress]++; });
             
-            const ctx = document.getElementById('chartProgress').getContext('2d');
-            if(chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
+            const ctxDoughnut = document.getElementById('chartProgress').getContext('2d');
+            if(chartProgressInstance) chartProgressInstance.destroy();
+            chartProgressInstance = new Chart(ctxDoughnut, {
                 type: 'doughnut',
                 data: {
                     labels: ['Read', 'Reading', 'TBR'],
@@ -445,10 +586,33 @@
                     }]
                 },
                 options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
+                    responsive: true, maintainAspectRatio: false, 
                     plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af', font: { weight: 'bold' } } } },
                     cutout: '70%'
+                }
+            });
+
+            // Bar Chart (Monthly)
+            const ctxBar = document.getElementById('chartMonthly').getContext('2d');
+            if(chartMonthlyInstance) chartMonthlyInstance.destroy();
+            chartMonthlyInstance = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Finished Titles',
+                        data: monthlyCounts,
+                        backgroundColor: '#f59e0b',
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: '#333' }, ticks: { stepSize: 1, color: '#9ca3af' } },
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af', font: { size: 10 } } }
+                    }
                 }
             });
         }
@@ -471,14 +635,19 @@
             document.getElementById('inpLink').value = m.link || '';
             document.getElementById('inpProgress').value = m.progress;
             document.getElementById('inpStatus').value = m.status;
-            document.getElementById('inpChapters').value = m.chapters || 0;
+            document.getElementById('inpCurrentChapter').value = m.currentChapter || '';
+            document.getElementById('inpChapters').value = m.chapters || '';
             document.getElementById('inpSummary').value = m.summary || '';
+            document.getElementById('inpNotes').value = m.notes || '';
             document.getElementById('inpTags').value = (m.tags || []).join(', ');
+            
+            setRatingUI(m.rating || 0);
             tempDates = m.finishedDates ? [...m.finishedDates] : [];
             
             renderDateList(); 
             toggleDateUI();
             
+            document.getElementById('btnSubmitModal').innerText = "Save Changes";
             document.getElementById('btnDelete').classList.remove('hidden');
             document.getElementById('mangaModal').classList.remove('hidden');
         }
@@ -486,11 +655,13 @@
         function openAddModal() {
             document.getElementById('mangaForm').reset();
             document.getElementById('editId').value = '';
+            setRatingUI(0);
             tempDates = []; 
             
             renderDateList(); 
             toggleDateUI();
             
+            document.getElementById('btnSubmitModal').innerText = "Add to Library";
             document.getElementById('btnDelete').classList.add('hidden');
             document.getElementById('mangaModal').classList.remove('hidden');
         }
@@ -503,14 +674,21 @@
             e.preventDefault();
             const id = document.getElementById('editId').value;
             
+            // Carry over pinned status if it exists
+            const existing = id ? manga.find(x => x.id === id || String(x.id) === String(id)) : null;
+            
             const obj = {
                 id: id || generateId(),
                 name: document.getElementById('inpName').value,
                 link: document.getElementById('inpLink').value,
                 progress: document.getElementById('inpProgress').value,
                 status: document.getElementById('inpStatus').value,
+                currentChapter: parseInt(document.getElementById('inpCurrentChapter').value) || 0,
                 chapters: parseInt(document.getElementById('inpChapters').value) || 0,
+                rating: parseInt(document.getElementById('inpRating').value) || 0,
                 summary: document.getElementById('inpSummary').value,
+                notes: document.getElementById('inpNotes').value,
+                pinned: existing ? existing.pinned : false,
                 tags: document.getElementById('inpTags').value.split(',').map(t => t.trim()).filter(t => t),
                 finishedDates: [...tempDates]
             };
@@ -563,13 +741,14 @@
                     <div class="bg-[#1a1a1a] rounded-3xl border border-[#333] overflow-hidden">
                         <div class="bg-orange-500/10 px-6 py-3 text-[10px] font-black text-orange-500 uppercase tracking-widest">${name}</div>
                         <div class="p-6 space-y-3">
-                            ${reads.map(r => `<div class="flex justify-between items-center text-sm font-bold"><span>${r.name}</span><span class="text-gray-600 text-[10px] font-mono">${r.date.getDate()}</span></div>`).join('')}
+                            ${reads.map(r => `<div class="flex justify-between items-center text-sm font-bold"><span>${escapeHtml(r.name)}</span><span class="text-gray-600 text-[10px] font-mono">${r.date.getDate()}</span></div>`).join('')}
                         </div>
                     </div>
                 `;
             });
         }
 
+        // --- DOMAIN MIGRATOR LOGIC ---
         function migrateDomains() {
             const oldStr = document.getElementById('inpOldDomain').value;
             const newStr = document.getElementById('inpNewDomain').value;
@@ -582,7 +761,6 @@
             let count = 0;
             manga.forEach(m => {
                 if(m.link && m.link.includes(oldStr)) {
-                    m.link = m.link.replace(newStr, "");
                     m.link = m.link.split(oldStr).join(newStr);
                     count++;
                 }
