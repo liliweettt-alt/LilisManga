@@ -148,6 +148,19 @@
                 </div>
                 <button onclick="clearData()" class="w-full text-red-500 text-[10px] font-black uppercase tracking-widest pt-4">Wipe All Local Storage</button>
             </div>
+
+            <div class="bg-[#1a1a1a] p-6 rounded-3xl border border-orange-500/20 mt-6 shadow-lg shadow-orange-500/5">
+                <div class="flex items-center gap-2 mb-3">
+                    <i class="fa-solid fa-link-slash text-orange-500"></i>
+                    <h3 class="text-sm font-bold text-white">Domain Migrator</h3>
+                </div>
+                <p class="text-[10px] text-gray-400 mb-4 leading-relaxed">Fix dead links when a scanlation site changes its URL (e.g., changing <span class="text-gray-300 font-mono">.me</span> to <span class="text-gray-300 font-mono">.co.uk</span>). This updates your entire library instantly.</p>
+                <div class="space-y-3">
+                    <input type="text" id="inpOldDomain" placeholder="Old text (e.g., harimanga.me)" class="input-field text-xs">
+                    <input type="text" id="inpNewDomain" placeholder="New text (e.g., harimanga.co.uk)" class="input-field text-xs">
+                    <button onclick="migrateDomains()" class="w-full bg-orange-500/10 text-orange-500 font-bold py-3 rounded-2xl text-xs hover:bg-orange-500/20 transition-colors">Replace Links</button>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -352,6 +365,7 @@
                 const card = document.createElement('div');
                 card.className = 'manga-card p-5 rounded-3xl animate-in flex flex-col';
                 if(m.progress === 'READING') card.style.borderLeftColor = '#f59e0b';
+                
                 const tagsHtml = (m.tags && m.tags.length > 0) ? `<div class="mt-2 flex flex-wrap gap-1">${m.tags.slice(0, 4).map(t => `<span class="tag-chip">${t}</span>`).join('')}</div>` : '';
                 const summaryHtml = m.summary ? `<p class="text-[11px] text-gray-400 italic mt-3 line-clamp-2 leading-relaxed">${m.summary}</p>` : '';
                 
@@ -554,6 +568,35 @@
                     </div>
                 `;
             });
+        }
+
+        function migrateDomains() {
+            const oldStr = document.getElementById('inpOldDomain').value;
+            const newStr = document.getElementById('inpNewDomain').value;
+            
+            if(!oldStr || !newStr) {
+                alert("Please enter both the old domain and the new domain.");
+                return;
+            }
+            
+            let count = 0;
+            manga.forEach(m => {
+                if(m.link && m.link.includes(oldStr)) {
+                    m.link = m.link.replace(newStr, "");
+                    m.link = m.link.split(oldStr).join(newStr);
+                    count++;
+                }
+            });
+            
+            if(count > 0) {
+                localStorage.setItem('mangaLibData_Orange', JSON.stringify(manga));
+                renderLibrary();
+                alert(`Successfully updated ${count} links!`);
+                document.getElementById('inpOldDomain').value = '';
+                document.getElementById('inpNewDomain').value = '';
+            } else {
+                alert("No matching links were found in your library.");
+            }
         }
 
         function handleFileUpload(e) {
