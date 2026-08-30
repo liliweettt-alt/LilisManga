@@ -203,6 +203,11 @@
                     <input type="text" id="inpLink" placeholder="https://..." class="input-field">
                 </div>
                 
+                <div>
+                    <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2 block">Cover Image URL</label>
+                    <input type="text" id="inpCover" placeholder="https://... (Image link)" class="input-field">
+                </div>
+                
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-1 mb-2 block">Reading Status</label>
@@ -288,7 +293,6 @@
         let chartMonthlyInstance = null;
         let readingGoal = localStorage.getItem('mangaGoal') || 20;
 
-        // XSS Helper Function
         function escapeHtml(str) {
             if (!str) return '';
             return String(str)
@@ -433,10 +437,9 @@
             });
 
             filtered.sort((a, b) => {
-                // Pinned always bubble to top
+
                 if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-                
-                // Normal secondary sort
+   
                 if (sortOpt === 'az') return a.name.localeCompare(b.name);
                 if (sortOpt === 'chapters') return (b.chapters || 0) - (a.chapters || 0); 
                 return 0; 
@@ -451,6 +454,7 @@
                 const safeName = escapeHtml(m.name);
                 const safeSummary = escapeHtml(m.summary);
                 
+                const coverHtml = m.coverUrl ? `<img src="${escapeHtml(m.coverUrl)}" loading="lazy" class="w-[72px] h-[104px] object-cover rounded-lg shadow-md shrink-0 border border-white/5 bg-[#2a2a2a]" alt="Cover">` : '';
                 const tagsHtml = (m.tags && m.tags.length > 0) ? `<div class="mt-2 flex flex-wrap gap-1">${m.tags.slice(0, 4).map(t => `<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</div>` : '';
                 const summaryHtml = m.summary ? `<p class="text-[11px] text-gray-400 italic mt-3 line-clamp-2 leading-relaxed">${safeSummary}</p>` : '';
                 const ratingHtml = m.rating ? `<div class="mt-2 text-amber-500 text-[10px] tracking-widest">${'★'.repeat(m.rating)}${'<span class="text-gray-600">★</span>'.repeat(5-m.rating)}</div>` : '';
@@ -466,14 +470,17 @@
 
                 card.innerHTML = `
                     <div class="flex justify-between items-start cursor-pointer" onclick="openEditModal('${safeId}')">
-                        <div class="flex-1 pr-3">
-                            <h3 class="font-extrabold text-xl text-white leading-tight mb-2 pr-6">${safeName}</h3>
-                            <div class="flex flex-wrap gap-1.5">
-                                <span class="badge-orange text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-tighter">${m.status}</span>
-                                <span class="text-[9px] bg-white/5 px-2 py-0.5 rounded font-bold text-gray-400 uppercase tracking-tighter">${m.progress}</span>
+                        <div class="flex gap-4 flex-1 pr-3">
+                            ${coverHtml}
+                            <div>
+                                <h3 class="font-extrabold text-xl text-white leading-tight mb-2 pr-6">${safeName}</h3>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <span class="badge-orange text-[9px] px-2 py-0.5 rounded font-black uppercase tracking-tighter">${m.status}</span>
+                                    <span class="text-[9px] bg-white/5 px-2 py-0.5 rounded font-bold text-gray-400 uppercase tracking-tighter">${m.progress}</span>
+                                </div>
+                                ${tagsHtml}
+                                ${ratingHtml}
                             </div>
-                            ${tagsHtml}
-                            ${ratingHtml}
                         </div>
                         <div class="flex flex-col items-end gap-3 shrink-0">
                             <div class="flex gap-2">
@@ -505,12 +512,11 @@
         }
 
         function updateStats() {
-            // General Stats
+
             document.getElementById('stat-total-works').innerText = manga.length;
             document.getElementById('stat-reading').innerText = manga.filter(m => m.progress === 'READING').length;
             document.getElementById('stat-finished').innerText = manga.filter(m => m.progress === 'READ').length;
 
-            // Rating Stats
             const ratedTitles = manga.filter(m => m.rating > 0);
             if (ratedTitles.length > 0) {
                 const avg = ratedTitles.reduce((sum, m) => sum + parseInt(m.rating), 0) / ratedTitles.length;
@@ -523,7 +529,6 @@
                 document.getElementById('stat-top-rated').innerText = 'None';
             }
 
-            // Streak & Goal Calculations
             const finishedMonths = new Set();
             const currentYear = new Date().getFullYear();
             let finishedThisYear = 0;
@@ -543,13 +548,11 @@
                 }
             });
 
-            // Calculate Streak
             let streak = 0;
             let currDate = new Date();
             let checkY = currDate.getFullYear();
             let checkM = currDate.getMonth();
-            
-            // If they haven't read this month, start checking from last month
+
             if (!finishedMonths.has(`${checkY}-${checkM}`)) {
                 checkM--;
                 if (checkM < 0) { checkM = 11; checkY--; }
@@ -562,13 +565,11 @@
             }
             document.getElementById('stat-streak').innerText = streak;
 
-            // Goal Progress
             document.getElementById('goalCount').innerText = finishedThisYear;
             document.getElementById('goalTotal').innerText = readingGoal;
             const percent = Math.min((finishedThisYear / readingGoal) * 100, 100);
             document.getElementById('goalBar').style.width = percent + '%';
 
-            // Doughnut Chart (Progress)
             const counts = { 'READ': 0, 'READING': 0, 'TBR': 0 };
             manga.forEach(m => { if(counts[m.progress] !== undefined) counts[m.progress]++; });
             
@@ -592,7 +593,6 @@
                 }
             });
 
-            // Bar Chart (Monthly)
             const ctxBar = document.getElementById('chartMonthly').getContext('2d');
             if(chartMonthlyInstance) chartMonthlyInstance.destroy();
             chartMonthlyInstance = new Chart(ctxBar, {
@@ -633,6 +633,7 @@
             document.getElementById('editId').value = m.id;
             document.getElementById('inpName').value = m.name;
             document.getElementById('inpLink').value = m.link || '';
+            document.getElementById('inpCover').value = m.coverUrl || '';
             document.getElementById('inpProgress').value = m.progress;
             document.getElementById('inpStatus').value = m.status;
             document.getElementById('inpCurrentChapter').value = m.currentChapter || '';
@@ -655,6 +656,7 @@
         function openAddModal() {
             document.getElementById('mangaForm').reset();
             document.getElementById('editId').value = '';
+            document.getElementById('inpCover').value = '';
             setRatingUI(0);
             tempDates = []; 
             
@@ -673,14 +675,14 @@
         function handleFormSubmit(e) {
             e.preventDefault();
             const id = document.getElementById('editId').value;
-            
-            // Carry over pinned status if it exists
+
             const existing = id ? manga.find(x => x.id === id || String(x.id) === String(id)) : null;
             
             const obj = {
                 id: id || generateId(),
                 name: document.getElementById('inpName').value,
                 link: document.getElementById('inpLink').value,
+                coverUrl: document.getElementById('inpCover').value,
                 progress: document.getElementById('inpProgress').value,
                 status: document.getElementById('inpStatus').value,
                 currentChapter: parseInt(document.getElementById('inpCurrentChapter').value) || 0,
@@ -748,7 +750,6 @@
             });
         }
 
-        // --- DOMAIN MIGRATOR LOGIC ---
         function migrateDomains() {
             const oldStr = document.getElementById('inpOldDomain').value;
             const newStr = document.getElementById('inpNewDomain').value;
