@@ -1,0 +1,24 @@
+/* ===== MangaLib styles =====
+   Custom styles. Tailwind classes live directly in index.html. */
+
+:root { 
+    --bg-body: #121212; 
+    --bg-card: #1e1e1e; 
+    --bg-input: #2a2a2a; 
+    --accent: #f59e0b; 
+}
+body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-body); color: #e5e7eb; }
+.glass-nav { background-color: rgba(18, 18, 18, 0.96); border-top: 1px solid #2a2a2a; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn { color: #6b7280; transition: color 0.2s; }
+.manga-card { background-color: var(--bg-card); border-left: 3px solid transparent; transition: border-color 0.2s; }
+.manga-card:active { background-color: #252525; }
+.input-field { width: 100%; background-color: var(--bg-input); padding: 0.8rem; border-radius: 0.5rem; border: 1px solid #333; color: white; }
+.input-field:focus { border-color: var(--accent); outline: none; }
+.btn-primary { background-color: var(--accent); color: #000; font-weight: 800; }
+.badge-orange { background: rgba(245, 158, 11, 0.1); color: var(--accent); border: 1px solid rgba(245, 158, 11, 0.2); }
+.tag-chip { font-size: 0.65rem; background: #2a2a2a; padding: 2px 8px; border-radius: 4px; color: #9ca3af; border: 1px solid #333; }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.animate-in { animation: slideUp 0.3s ease-out forwards; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
