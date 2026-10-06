@@ -1,3 +1,6 @@
+/* ===== library.js =====
+   The Books tab: filters, tags, pinning, drawing the manga cards. */
+
 function populateFilterDropdowns() {
     const tagSet = new Set();
     manga.forEach(m => { (Array.isArray(m.tags) ? m.tags : []).forEach(t => tagSet.add(String(t).trim())); });
@@ -23,9 +26,11 @@ function togglePin(id) {
     }
 }
 
+// Friendly labels for the values stored in your data
 const PROGRESS_LABELS = { READING: 'Reading', TBR: 'To read', READ: 'Finished' };
 const STATUS_LABELS = { WIP: 'Ongoing', COMPLETE: 'Complete' };
 
+// Opens or closes the Summary & Notes panel of ONE card (no full redraw needed)
 function toggleDetails(btn, id) {
     const panel = btn.closest('.manga-card').querySelector('.details-panel');
     const wasOpen = expandedCards.has(id);
@@ -35,10 +40,12 @@ function toggleDetails(btn, id) {
     btn.setAttribute('aria-label', wasOpen ? 'Show summary and notes' : 'Hide summary and notes');
 }
 
+// Builds the HTML element for ONE manga card
 function buildCard(m) {
     const card = document.createElement('article');
     card.className = 'manga-card animate-in';
 
+    // --- status line: "Reading · Ongoing" + stars
     const progressLabel = PROGRESS_LABELS[m.progress] || m.progress || '';
     const statusLabel = STATUS_LABELS[m.status] || m.status || '';
     const stateClass = m.progress === 'READING' ? 'meta-state reading' : 'meta-state';
@@ -49,6 +56,7 @@ function buildCard(m) {
         ? `<span class="card-stars" aria-label="${rating} of 5 stars">${'★'.repeat(rating)}<span class="off">${'★'.repeat(5 - rating)}</span></span>`
         : '';
 
+    // --- cover, tags
     const coverHtml = m.coverUrl
         ? `<img src="${escapeHtml(m.coverUrl)}" loading="lazy" class="card-cover" alt="Cover">`
         : '';
@@ -56,6 +64,7 @@ function buildCard(m) {
         ? `<div class="card-tags">${m.tags.slice(0, 4).map(escapeHtml).join(' · ')}</div>`
         : '';
 
+    // --- progress bar (only when we know both current chapter and total)
     const cur = Number(m.currentChapter) || 0;
     const total = Number(m.chapters) || 0;
     let progressHtml;
@@ -67,6 +76,7 @@ function buildCard(m) {
         progressHtml = `<div class="ch-text">${cur || total || 0} <b>ch</b></div>`;
     }
 
+    // --- Summary & Notes panel (only built if the title has at least one)
     const summary = (m.summary || '').trim();
     const notes = (m.notes || '').trim();
     const hasDetails = summary || notes;
@@ -85,6 +95,7 @@ function buildCard(m) {
         ? `<div class="details-panel" ${isOpen ? '' : 'hidden'}>${summaryBlock}${notesBlock}</div>`
         : '';
 
+    // --- put it all together
     card.innerHTML = `
         <div class="card-row">
             ${coverHtml}

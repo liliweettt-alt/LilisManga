@@ -1,5 +1,8 @@
+/* ===== main.js =====
+   Startup code and tab switching. Loaded LAST. */
+
 document.addEventListener('DOMContentLoaded', () => {
- 
+    // Hook up the buttons FIRST, so they keep working even if something below fails
     document.getElementById('fileInput').addEventListener('change', handleFileUpload);
     document.getElementById('currentYear').innerText = new Date().getFullYear();
     document.getElementById('mangaForm').addEventListener('submit', handleFormSubmit);

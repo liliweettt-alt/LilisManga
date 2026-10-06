@@ -1,3 +1,6 @@
+/* ===== settings.js =====
+   The Config tab: export, import, wipe data, domain migrator. */
+
 function migrateDomains() {
     const oldStr = document.getElementById('inpOldDomain').value;
     const newStr = document.getElementById('inpNewDomain').value;
@@ -33,8 +36,10 @@ function handleFileUpload(e) {
 
     const reader = new FileReader();
     reader.onload = (ev) => {
+        // Always reset the picker, so choosing the SAME file again still works
         input.value = '';
 
+        // Step 1: read the file
         let importedManga;
         try {
             const data = JSON.parse(ev.target.result);
@@ -53,9 +58,11 @@ function handleFileUpload(e) {
             return;
         }
 
+        // Step 2: save it
         manga = importedManga;
         localStorage.setItem('mangaLibData_Orange', JSON.stringify(manga));
 
+        // Step 3: show it (a problem here is logged, not hidden behind a wrong message)
         try {
             renderLibrary();
         } catch (err) {

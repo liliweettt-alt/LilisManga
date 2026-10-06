@@ -20,7 +20,7 @@ body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--bg-
 .card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .card-top { display: flex; align-items: flex-start; }
 .card-title { flex: 1; margin: 0; font-size: 1rem; line-height: 1.25; font-weight: 700; color: #fff;
-    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; font-weight: 600; color: #9ca3af; }
 .meta-state.reading { color: var(--accent); font-weight: 700; }
 .card-stars { letter-spacing: 2px; color: var(--accent); }
