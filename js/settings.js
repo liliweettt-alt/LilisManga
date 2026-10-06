@@ -1,6 +1,3 @@
-/* ===== settings.js =====
-   The Config tab: export, import, wipe data, domain migrator. */
-
 function migrateDomains() {
     const oldStr = document.getElementById('inpOldDomain').value;
     const newStr = document.getElementById('inpNewDomain').value;
@@ -30,29 +27,43 @@ function migrateDomains() {
 }
 
 function handleFileUpload(e) {
-    const file = e.target.files[0];
+    const input = e.target;
+    const file = input.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (ev) => {
+        input.value = '';
+
+        let importedManga;
         try {
             const data = JSON.parse(ev.target.result);
-            let importedManga = Array.isArray(data) ? data : (data.manga || []);
-
-            importedManga = importedManga.map(m => ({...m, id: m.id || generateId()}));
-            manga = importedManga; 
-
-            localStorage.setItem('mangaLibData_Orange', JSON.stringify(manga));
-            renderLibrary();
-
-            alert(`Success! Imported ${manga.length} titles into your library.`);
-            switchTab('library');
-
-            document.getElementById('fileInput').value = '';
-
-        } catch(err) { 
-            alert("Error parsing JSON. Please make sure the file format is correct."); 
+            importedManga = Array.isArray(data) ? data : (data.manga || []);
+        } catch (err) {
+            alert("Error parsing JSON. Please make sure the file format is correct.");
+            return;
         }
+
+        importedManga = importedManga
+            .filter(m => m && typeof m === 'object')
+            .map(m => ({...m, id: m.id || generateId()}));
+
+        if (importedManga.length === 0) {
+            alert("No titles were found in that file.");
+            return;
+        }
+
+        manga = importedManga;
+        localStorage.setItem('mangaLibData_Orange', JSON.stringify(manga));
+
+        try {
+            renderLibrary();
+        } catch (err) {
+            console.error('Imported, but could not draw the library:', err);
+        }
+
+        alert(`Success! Imported ${manga.length} titles into your library.`);
+        switchTab('library');
     };
     reader.readAsText(file);
 }

@@ -1,16 +1,19 @@
-/* ===== main.js =====
-   Startup code and tab switching. Loaded LAST. */
-
 document.addEventListener('DOMContentLoaded', () => {
-    const stored = localStorage.getItem('mangaLibData_Orange');
-    if (stored) { 
-        manga = JSON.parse(stored); 
-        ensureDataIntegrity();
-        renderLibrary(); 
-    }
+ 
     document.getElementById('fileInput').addEventListener('change', handleFileUpload);
     document.getElementById('currentYear').innerText = new Date().getFullYear();
     document.getElementById('mangaForm').addEventListener('submit', handleFormSubmit);
+
+    const stored = localStorage.getItem('mangaLibData_Orange');
+    if (stored) {
+        try {
+            manga = JSON.parse(stored);
+            ensureDataIntegrity();
+            renderLibrary();
+        } catch (err) {
+            console.error('Could not load saved library:', err);
+        }
+    }
 });
 
 function switchTab(tab) {
